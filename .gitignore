@@ -1,0 +1,6 @@
+.stack-work/
+.pijul/
+gghask.cabal
+*~
+*.swp
+*.swo
