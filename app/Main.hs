@@ -20,10 +20,8 @@ plot =
         field = [0,(0.1)..4]
         xs = map fst $ signal field
         ys = map snd $ signal field
-        scaledX = map (* 0.25) xs
-        scaledY = map (\x -> x * 0.5 + 0.2) ys
         colors = take (length xs) $ cycle ["tokio", "kioto", "nagoya"]
-    in ggplot [ aes ! x scaledX ! y scaledY ! color colors
+    in ggplot [ aes ! x xs ! y ys ! color colors
               , geomPoint
               , xlab "label for x"
               ]

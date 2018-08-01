@@ -13,8 +13,8 @@ module GGPlot
     , color
     , (!)
     , getAes
-    , GGPlot
-    , PlotElement (Aes)
+    , GGPlot (GGPlot)
+    , PlotElement (Aes, Geom, XLabel)
     , GeomType
     , Attribute
     , Attributable
@@ -40,13 +40,13 @@ xlab s = XLabel s
 
 x :: [ Double ] -> Attribute
 x xs = Attribute (\p -> case p of
-                     Aes _ ys cs -> Aes (map mkPlotSpaceValue xs) ys cs
+                     Aes _ ys cs -> Aes xs ys cs
                      other -> other
                      )
 
 y :: [ Double ] -> Attribute
 y ys = Attribute (\p -> case p of
-                     Aes xs _ cs -> Aes xs (map mkPlotSpaceValue ys) cs
+                     Aes xs _ cs -> Aes xs ys cs
                      other -> other
                      )
 
@@ -58,7 +58,7 @@ color cs = Attribute (\p -> case p of
 
 data GGPlot = GGPlot [ PlotElement ] deriving Show
 
-data PlotElement = Aes [ PlotSpaceValue ] [ PlotSpaceValue ] [ String ]
+data PlotElement = Aes [ Double ] [ Double ] [ String ]
                  | Geom GeomType
                  | XLabel String
                  deriving Show
