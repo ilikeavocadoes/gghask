@@ -26,7 +26,7 @@ data ImageSpaceValue = ImageSpaceValue Double deriving Show
 instance Convertable ImageSpaceValue where
     toDouble (ImageSpaceValue v) = v
 
-data PlotSpaceValue = PlotSpaceValue Double deriving Show
+data PlotSpaceValue = PlotSpaceValue Double deriving (Show, Ord, Eq)
 
 instance Convertable PlotSpaceValue where
     toDouble (PlotSpaceValue v) = v

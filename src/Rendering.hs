@@ -13,15 +13,37 @@ import qualified Text.Blaze.Svg11.Attributes as A
 import qualified GGPlot as P
 import Units
 
+
 data Guide = X | Y | Color
 
 toSvg :: P.GGPlot -> S.Svg
 toSvg plot = S.docTypeSvg ! A.version "1.1" ! A.width "800" ! A.height "800" ! A.viewbox "0 0 100 100" $ do
     -- GeomLine specific
     let plotSpaced = toPlotSpace plot
-    xGuide []
-    yGuide []
+        P.Aes xs ys _= fromJust $ P.getAes plot
+        Aes _ f _ g _ = fromJust $ getAes plotSpaced
+        xTicks = generateTicks xs f
+        yTicks = generateTicks ys g
+    xGuide $ map toImageSpace xTicks
+    yGuide $ map toImageSpace yTicks
     plotPoints $ fromJust $ getAes plotSpaced
+
+generateTicks :: [ Double ] -> ( Double -> PlotSpaceValue ) -> [ PlotSpaceValue ]
+generateTicks xs f =
+    let minTicks = 4
+        scale = maximum xs - minimum xs
+        step = fromIntegral $ floorToOneOrFive $ scale / minTicks
+    in takeWhile (< (f $ maximum xs) ) $ dropWhile (< (f $ minimum xs) ) [ f x | x <- iterate (+ step) (fromIntegral $ floorToOneOrFive $ minimum xs) ]
+
+magnitude :: Double -> Integer
+magnitude x =
+    (10 ^) $ fromIntegral $ length $ takeWhile (>= 10) $ iterate (/ 10) (abs x)
+
+floorToOneOrFive :: Double -> Integer
+floorToOneOrFive x =
+    let m = magnitude x
+        firstDigit = if ( x / fromIntegral m ) < 5 then 1 else 5
+    in firstDigit * m
 
 
 {-renderGeom geom svg = case geom of-}
@@ -45,7 +67,7 @@ scaleToPlotSpace xs =
         xMin = minimum xs
         offset = xMin - ( emptyRatio * ( xMax - xMin ) )
         width = ( xMax - xMin ) * ( 1 + 2 * emptyRatio )
-    in (\x -> mkPlotSpaceValue $ (x - offset) / width)
+    in \x -> mkPlotSpaceValue $ (x - offset) / width
 
 data PlotSpaceGGPlot = PlotSpaceGGPlot [ PlotSpaceElement ]
 
@@ -59,21 +81,31 @@ getAes (PlotSpaceGGPlot elements) = find (\e -> case e of
                                             _ -> False
                                         ) elements
 
-xGuide :: [ Double ] -> S.Svg
+xGuide :: [ ImageSpaceValue ] -> S.Svg
 xGuide ticks = spatialGuide ticks XAxis
 
-yGuide :: [ Double ] -> S.Svg
+yGuide :: [ ImageSpaceValue ] -> S.Svg
 yGuide ticks = spatialGuide ticks YAxis
 
 data Axis = XAxis | YAxis
 
-spatialGuide :: [ Double ] -> Axis -> S.Svg
+spatialGuide :: [ ImageSpaceValue ] -> Axis -> S.Svg
 spatialGuide ticks axis = do
-    S.g $
+    S.g $ do
         let (x1, y1, x2, y2) = case axis of
                 XAxis -> ("10", "90", "90", "90")
                 YAxis -> ("10", "90", "10", "10")
-        in line x1 y1 x2 y2
+        line x1 y1 x2 y2
+        mapM_ (mkTick axis) ticks
+
+mkTick :: Axis -> ImageSpaceValue -> S.Svg
+mkTick axis value = do
+    let v = S.stringValue $ show $ toDouble value
+        (x1, y1, x2, y2) = case axis of
+            XAxis -> (v, "90", v, "92")
+            YAxis -> ("10", v, "8", v)
+    line x1 y1 x2 y2
+
 
 plotPoints :: PlotSpaceElement -> S.Svg
 plotPoints (Aes xs f ys h cs) = do
