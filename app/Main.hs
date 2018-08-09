@@ -17,7 +17,7 @@ signal xs = [ (x,(sin (x*3.14159/45) + 1) / 2 * (sin (x*3.14159/5))) | x <- xs ]
 plot :: GGPlot
 plot =
     let
-        field = [0,(0.1)..4]
+        field = map (+ 4) [1,(1.1)..30]
         xs = map fst $ signal field
         ys = map snd $ signal field
         colors = take (length xs) $ cycle ["tokio", "kioto", "nagoya"]
