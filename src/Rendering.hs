@@ -25,26 +25,39 @@ toSvg plot = S.docTypeSvg ! A.version "1.1" ! A.width "800" ! A.height "800" ! A
         Aes _ f _ g _ = fromJust $ getAes plotSpaced
         xTicks = generateTicks xs f
         yTicks = generateTicks ys g
-    xGuide $ map (\(v, s) -> (toImageSpace v, s)) xTicks
-    yGuide $ map (\(v, s) -> (toImageSpace v, s)) yTicks
+    xGuide $ map (\(v, s) -> (toImageSpace False v, s)) xTicks
+    yGuide $ map (\(v, s) -> (toImageSpace True v, s)) yTicks
     plotPoints $ fromJust $ getAes plotSpaced
 
 generateTicks :: [ Double ] -> ( Double -> PlotSpaceValue ) -> [ ( PlotSpaceValue, String ) ]
 generateTicks xs f =
     let minTicks = 4
         scale = maximum xs - minimum xs
-        step = fromIntegral $ floorToOneOrFive $ scale / minTicks
-    in takeWhile (\x -> fst x < (f $ maximum xs) ) $ dropWhile (\x -> fst x < (f $ minimum xs - 0.05 * scale) ) [ (f x, show x) | x <- iterate (+ step) (fromIntegral $ floorToOneOrFive $ minimum xs - step) ]
+        maxStep = scale / minTicks
+        step = floorToOneOrFive maxStep
+    in takeWhile (\x -> fst x < (f $ maximum xs) ) $ dropWhile (\x -> fst x < (f $ minimum xs - 0.05 * scale) ) [ (f $ fromRational x, show $ fromRational x) | x <- iterate ((floorToStepSize step) . (+ step)) (toRational $ minimum xs) ]
 
 
-magnitude :: Double -> Integer
+magnitude :: Double -> Rational
+magnitude 0 = 1
 magnitude x =
-    (10 ^) $ fromIntegral $ length $ takeWhile (>= 10) $ iterate (/ 10) (abs x)
+    let (iterator, negativeSign) = if x > 1 then ((/ 10), False ) else ((* 10), True)
+        exponent = (10 ^) $ fromIntegral $ length $ takeWhile (\n -> (n >= 10) || (n < 1)) $ take 4 $ iterate iterator (abs x)
+    in if negativeSign then 1/exponent else exponent
 
-floorToOneOrFive :: Double -> Integer
+floorToStepSize :: Rational -> Rational -> Rational
+floorToStepSize stepSize x = fromRational $ (* stepSize) $ toRational $ floor $ x / stepSize
+
+floorToZeroOrFive :: Double -> Rational
+floorToZeroOrFive x =
+    let m = magnitude x
+        firstDigit = if ( toRational x / m ) < 5 then 0 else 5
+    in firstDigit * m
+
+floorToOneOrFive :: Double -> Rational
 floorToOneOrFive x =
     let m = magnitude x
-        firstDigit = if ( x / fromIntegral m ) < 5 then 1 else 5
+        firstDigit = if ( toRational x / m ) < 5 then 1 else 5
     in firstDigit * m
 
 
@@ -107,13 +120,15 @@ mkTick axis value label = do
             XAxis -> (v, "90", v, "92")
             YAxis -> ("10", v, "8", v)
     line x1 y1 x2 y2
-    S.text_ ( S.string label ) ! A.x  x1 ! A.y "94"
+    S.text_ ( S.string label ) ! A.y y1 ! case axis of
+                                            XAxis -> A.x x1
+                                            YAxis -> A.x "4"
 
 
 plotPoints :: PlotSpaceElement -> S.Svg
 plotPoints (Aes xs f ys h cs) = do
     S.g $ do
-        mapM_ marker $ zip3 (map toImageSpace xs) (map toImageSpace ys) (categorize cs)
+        mapM_ marker $ zip3 (map (toImageSpace False) xs) (map (toImageSpace True) ys) (categorize cs)
 
 marker :: (ImageSpaceValue, ImageSpaceValue, Integer) -> S.Svg
 marker (x, y, color) = do
@@ -121,7 +136,7 @@ marker (x, y, color) = do
 
 plotLines :: PlotSpaceElement -> S.Svg
 plotLines (Aes xs f ys h cs) =
-    let pairs = zip (map toImageSpace xs) (map toImageSpace ys)
+    let pairs = zip (map (toImageSpace False) xs) (map (toImageSpace True) ys)
         attributeParts = map (\(x, y) -> (show $ toDouble x) ++ "," ++ (show $ toDouble y)) pairs
         attributeString = intercalate " " attributeParts
     in S.polyline ! A.points (S.stringValue attributeString) ! A.fill "none" ! A.stroke "black"

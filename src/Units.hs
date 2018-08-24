@@ -31,10 +31,11 @@ data PlotSpaceValue = PlotSpaceValue Double deriving (Show, Ord, Eq)
 instance Convertable PlotSpaceValue where
     toDouble (PlotSpaceValue v) = v
 
-toImageSpace :: PlotSpaceValue -> ImageSpaceValue
-toImageSpace (PlotSpaceValue v) = 
+toImageSpace :: Bool -> PlotSpaceValue -> ImageSpaceValue
+toImageSpace isY (PlotSpaceValue v) = 
     let w = v * 80 + 10
-    in ImageSpaceValue w
+        w' = if isY then 100 - w else w
+    in ImageSpaceValue w'
 
 mkPlotSpaceValue :: Double -> PlotSpaceValue
 mkPlotSpaceValue v = PlotSpaceValue v
