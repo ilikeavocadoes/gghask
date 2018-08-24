@@ -18,7 +18,8 @@ data Guide = X | Y | Color
 
 toSvg :: P.GGPlot -> S.Svg
 toSvg plot = S.docTypeSvg ! A.version "1.1" ! A.width "800" ! A.height "800" ! A.viewbox "0 0 100 100" $ do
-    S.style "text { font-size: 2px; }"
+    S.style "text { font-size: 2px; }\
+            \line { stroke-width: 0.25px; }"
     -- GeomLine specific
     let plotSpaced = toPlotSpace plot
         P.Aes xs ys _= fromJust $ P.getAes plot
@@ -117,8 +118,8 @@ mkTick :: Axis -> ImageSpaceValue -> String -> S.Svg
 mkTick axis value label = do
     let v = S.stringValue $ show $ toDouble value
         (x1, y1, x2, y2) = case axis of
-            XAxis -> (v, "90", v, "92")
-            YAxis -> ("10", v, "8", v)
+            XAxis -> (v, "90", v, "91")
+            YAxis -> ("10", v, "9", v)
     line x1 y1 x2 y2
     S.text_ ( S.string label ) ! A.y y1 ! case axis of
                                             XAxis -> A.x x1
