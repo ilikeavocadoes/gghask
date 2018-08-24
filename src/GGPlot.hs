@@ -13,9 +13,10 @@ module GGPlot
     , color
     , (!)
     , getAes
+    , getGeoms
     , GGPlot (GGPlot)
     , PlotElement (Aes, Geom, XLabel)
-    , GeomType
+    , GeomType (Line, Point)
     , Attribute
     , Attributable
     ) where
@@ -68,6 +69,12 @@ getAes (GGPlot elements) = find (\e -> case e of
                                     Aes _ _ _ -> True
                                     _ -> False
                                 ) elements
+
+getGeoms :: GGPlot -> [PlotElement]
+getGeoms (GGPlot elements) = filter (\e -> case e of
+                                        Geom t -> True
+                                        _ -> False
+                                    ) elements
 
 data GeomType = Line | Point deriving Show
 

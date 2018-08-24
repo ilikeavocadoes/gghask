@@ -21,7 +21,9 @@ getNColorCodes n =
     let m = fromIntegral n
     in take m $ cycle [0x00AA00, 0x0000AA, 0xAA0000]
 
-data ImageSpaceValue = ImageSpaceValue Double deriving Show
+data ImageSpaceValue = ImageSpaceValue Double
+instance Show ImageSpaceValue where
+    show (ImageSpaceValue d) = show d
 
 instance Convertable ImageSpaceValue where
     toDouble (ImageSpaceValue v) = v

@@ -18,11 +18,17 @@ plot :: GGPlot
 plot =
     let
         field = [0,(0.1)..30]
-        xs = map fst $ signal field
-        ys = map snd $ signal field
-        colors = take (length xs) $ cycle ["tokio", "kioto", "nagoya"]
+        xs1 = map fst $ signal field
+        ys1 = map snd $ signal field
+        xs2 = map fst $ signal field
+        ys2 = map (+ 2) $ map snd $ signal field
+        {-colors = take (length xs) $ cycle ["tokio", "kioto", "nagoya"]-}
+
+        xs = xs1 ++ xs2
+        ys = ys1 ++ ys2
+        colors = take (length xs1) (repeat "tokio") ++ take (length xs2) (repeat "kioto")
     in ggplot [ aes ! x xs ! y ys ! color colors
-              , geomPoint
+              , geomLine
               , xlab "label for x"
               ]
 

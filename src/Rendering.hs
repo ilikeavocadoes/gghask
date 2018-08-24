@@ -11,6 +11,7 @@ import Text.Blaze.Svg11 ((!))
 import qualified Text.Blaze.Svg11 as S
 import qualified Text.Blaze.Svg11.Attributes as A
 import qualified GGPlot as P
+import Data.List.Unique as U
 import Units
 
 
@@ -26,9 +27,15 @@ toSvg plot = S.docTypeSvg ! A.version "1.1" ! A.width "800" ! A.height "800" ! A
         Aes _ f _ g _ = fromJust $ getAes plotSpaced
         xTicks = generateTicks xs f
         yTicks = generateTicks ys g
+        geoms = map (\(P.Geom t) -> t) $ P.getGeoms plot
     xGuide $ map (\(v, s) -> (toImageSpace False v, s)) xTicks
     yGuide $ map (\(v, s) -> (toImageSpace True v, s)) yTicks
-    plotPoints $ fromJust $ getAes plotSpaced
+    mapM_ (plotGeom $ fromJust $ getAes plotSpaced) geoms
+
+plotGeom :: PlotSpaceElement -> P.GeomType -> S.Svg
+plotGeom aes geom = case geom of
+    P.Line -> plotLines aes
+    P.Point -> plotPoints aes
 
 generateTicks :: [ Double ] -> ( Double -> PlotSpaceValue ) -> [ ( PlotSpaceValue, String ) ]
 generateTicks xs f =
@@ -131,16 +138,30 @@ plotPoints (Aes xs f ys h cs) = do
     S.g $ do
         mapM_ marker $ zip3 (map (toImageSpace False) xs) (map (toImageSpace True) ys) (categorize cs)
 
+plotLines :: PlotSpaceElement -> S.Svg
+plotLines (Aes xs f ys h cs) = do
+    S.g $ do
+        let categorizedColors = categorize cs
+            uniqueCategories = U.sortUniq categorizedColors
+            filters = map filterPoint uniqueCategories
+            coords = zip3 (map (toImageSpace False) xs) (map (toImageSpace True) ys) categorizedColors
+            groupedLines = map (\f -> filter f coords) filters 
+        mapM_ polyline groupedLines
+
+filterPoint :: Integer -> (ImageSpaceValue, ImageSpaceValue, Integer) -> Bool
+filterPoint category (x, y, c) = category == c
+
+polyline :: [ (ImageSpaceValue, ImageSpaceValue, Integer) ] -> S.Svg
+polyline points = do
+    S.polyline ! A.points (S.stringValue $ concatMap (\(x, y, _) -> show x ++ "," ++ show y ++ " ") points)
+               ! A.fill "none"
+               ! A.stroke "black"
+               ! A.strokeWidth "0.25"
+
+
 marker :: (ImageSpaceValue, ImageSpaceValue, Integer) -> S.Svg
 marker (x, y, color) = do
     S.circle ! A.cx (S.stringValue (show $ toDouble x)) ! A.cy (S.stringValue (show $ toDouble y)) ! A.r "0.5" ! A.fill (S.stringValue $ printf "#%06X" color)
-
-plotLines :: PlotSpaceElement -> S.Svg
-plotLines (Aes xs f ys h cs) =
-    let pairs = zip (map (toImageSpace False) xs) (map (toImageSpace True) ys)
-        attributeParts = map (\(x, y) -> (show $ toDouble x) ++ "," ++ (show $ toDouble y)) pairs
-        attributeString = intercalate " " attributeParts
-    in S.polyline ! A.points (S.stringValue attributeString) ! A.fill "none" ! A.stroke "black"
 
 line x1 y1 x2 y2 = do
     S.line ! A.x1 x1 ! A.y1 y1 ! A.x2 x2 ! A.y2 y2 ! A.stroke "black"
