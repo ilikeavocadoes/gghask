@@ -22,11 +22,13 @@ plot =
         ys1 = map snd $ signal field
         xs2 = map fst $ signal field
         ys2 = map (+ 2) $ map snd $ signal field
+        xs3 = map fst $ signal field
+        ys3 = map (+ 0.2) $ map snd $ signal field
         {-colors = take (length xs) $ cycle ["tokio", "kioto", "nagoya"]-}
 
-        xs = xs1 ++ xs2
-        ys = ys1 ++ ys2
-        colors = take (length xs1) (repeat "tokio") ++ take (length xs2) (repeat "kioto")
+        xs = xs1 ++ xs2 ++ xs3
+        ys = ys1 ++ ys2 ++ ys3
+        colors = take (length xs1) (repeat "tokio") ++ take (length xs2) (repeat "kioto") ++ take (length xs3) (repeat "nagoya")
     in ggplot [ aes ! x xs ! y ys ! color colors
               , geomLine
               , xlab "label for x"

@@ -21,7 +21,6 @@ toSvg :: P.GGPlot -> S.Svg
 toSvg plot = S.docTypeSvg ! A.version "1.1" ! A.width "800" ! A.height "800" ! A.viewbox "0 0 100 100" $ do
     S.style "text { font-size: 2px; }\
             \line { stroke-width: 0.25px; }"
-    -- GeomLine specific
     let plotSpaced = toPlotSpace plot
         P.Aes xs ys _= fromJust $ P.getAes plot
         Aes _ f _ g _ = fromJust $ getAes plotSpaced
@@ -153,15 +152,18 @@ filterPoint category (x, y, c) = category == c
 
 polyline :: [ (ImageSpaceValue, ImageSpaceValue, Integer) ] -> S.Svg
 polyline points = do
+    let (_, _, color) = head points
     S.polyline ! A.points (S.stringValue $ concatMap (\(x, y, _) -> show x ++ "," ++ show y ++ " ") points)
                ! A.fill "none"
-               ! A.stroke "black"
+               ! A.stroke (S.stringValue $ asHexString color)
                ! A.strokeWidth "0.25"
 
+asHexString :: Integer -> String
+asHexString x = printf "#%06X" x
 
 marker :: (ImageSpaceValue, ImageSpaceValue, Integer) -> S.Svg
 marker (x, y, color) = do
-    S.circle ! A.cx (S.stringValue (show $ toDouble x)) ! A.cy (S.stringValue (show $ toDouble y)) ! A.r "0.5" ! A.fill (S.stringValue $ printf "#%06X" color)
+    S.circle ! A.cx (S.stringValue (show $ toDouble x)) ! A.cy (S.stringValue (show $ toDouble y)) ! A.r "0.5" ! A.fill (S.stringValue $ asHexString color)
 
 line x1 y1 x2 y2 = do
     S.line ! A.x1 x1 ! A.y1 y1 ! A.x2 x2 ! A.y2 y2 ! A.stroke "black"
